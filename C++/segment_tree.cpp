@@ -54,7 +54,7 @@ bool test_power_of_2() {
 
 bool test_uncomplete_tree() {
     vector<int> uncomplete_tree {3, 6, 2, 1, 5, 10, 2, 11, 4, 8}; //length 10
-    vector<int> uncomplete_tree_should {0, 52, 17, 35, 11, 6, 23, 12, 9, 2, 1, 5, 12, 11, 4, 8, 3, 6, 0, 0, 0, 0, 0, 10, 2, 0, 0, 0, 0, 0, 0}; //length 10
+    vector<int> uncomplete_tree_should {0, 52, 17, 35, 11, 6, 23, 12, 9, 2, 1, 5, 12, 11, 4, 8, 3, 6, 0, 0, 0, 0, 0, 0, 10, 2, 0, 0, 0, 0, 0, 0};
     SegmentTree t;
     t.build(uncomplete_tree);
     for (int k = 0; k < uncomplete_tree_should.size(); k++) if (uncomplete_tree_should[k] != t[k]) {

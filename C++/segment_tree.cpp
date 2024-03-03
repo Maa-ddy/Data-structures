@@ -1,46 +1,105 @@
 #include <bits/stdc++.h>
 using namespace std;
 
+typedef int STNode;
 class SegmentTree {
-    vector<int> t;
+  vector<STNode> t;
+  int leaves_count;
 
-    void build(vector<int> const &a, int v, int tl, int tr) {
-        if (tl == tr) {
-            t[v] = a[tl];
+  void build(vector<int> const &a, int v, int tl, int tr) {
+    if (tl == tr) {
+      t[v] = build_leaf_node(a[tl]);
+    } else {
+      int tm = (tl + tr) / 2;
+      build(a, v*2, tl, tm);
+      build(a, v*2+1, tm+1, tr);
+      t[v] = operation(
+        left_child(v), 
+        right_child(v)
+      );
+    }
+  }
+
+  STNode build_leaf_node(int elt) {
+    return elt;
+  }
+
+  STNode neutral_node() {
+    return 0;
+  }
+
+  STNode operation(STNode x, STNode y) {
+    return x + y;
+  }
+
+  STNode left_child(int v) {
+    return t[v * 2];
+  }
+
+  STNode right_child(int v) {
+    return t[v * 2 + 1];
+  }
+
+  STNode q(int v, int tl, int tr, int l, int r) {
+      if (l > r) {
+        return neutral_node();
+      }
+      if (l == tl && r == tr) {
+        return t[v];
+      }
+      int tm = (tl + tr) / 2;
+      return operation(
+        q(v * 2, tl, tm, l, min(r, tm)),
+        q(v * 2 + 1, tm + 1, tr, max(l, tm + 1), r)
+      );
+  }
+
+  void update(int v, int tl, int tr, int pos, STNode new_val) {
+      if (tl == tr) {
+        t[v] = new_val;
+      } else {
+        int tm = (tl + tr) / 2;
+        if (pos <= tm) {
+          update(v * 2, tl, tm, pos, new_val);
         } else {
-            int tm = (tl + tr) / 2;
-            build(a, v*2, tl, tm);
-            build(a, v*2+1, tm+1, tr);
-            t[v] = operation(
-                left_child(v), 
-                right_child(v)
-            );
+          update(v * 2 + 1, tm + 1, tr, pos, new_val);
         }
-    }
+        t[v] = operation(t[v * 2], t[v * 2 + 1]);
+      }
+  }
 
-    int operation(int x, int y) {
-        return x + y;
-    }
+  public:
+  void build(vector<int> const &a) {
+    int n = a.size();
+    leaves_count = n;
+    t.clear();
+    t.resize(4 * n);
+    int v = 1;
+    int tl = 0;
+    int tr = n - 1;
+    build(a, v, tl, tr);
+  }
 
-    int left_child(int v) {
-        return t[v * 2];
-    }
+  STNode q(int l, int r) {
+    int v = 1;
+    int tl = 0;
+    int tr = leaves_count - 1;
+    return q(v, tl, tr, l, r);
+  }
 
-    int right_child(int v) {
-        return t[v * 2 + 1];
-    }
+  void update(int pos, int new_val) {
+    int v = 1;
+    int tl = 0;
+    int tr = leaves_count - 1;
+    STNode val = build_leaf_node(new_val);
+    update(v, tl, tr, pos, val);
+  }
 
-    public:
-    void build(vector<int> const &a) {
-        int n = a.size();
-        t.clear();
-        t.resize(4 * n);
-        build(a, 1, 0, n - 1);
-    }
+  STNode operator [](int idx) const {
+    // for debugging
+    return t[idx];
+  }
 
-    int operator [](int idx) const {
-        return t[idx];
-    }
 };
 
 bool test_power_of_2() {
@@ -66,11 +125,13 @@ bool test_uncomplete_tree() {
 }
 
 int  main() {
+    cout << "Starting tests..." << endl;
     if (!test_power_of_2()) {
         cout << "<Tree of length power of 2> test failed" << endl;
     }
     if (!test_uncomplete_tree()) {
         cout << "<Uncomplete tree> test failed" << endl;
     }
+    cout << "Finished all tests" << endl;
     return 0;
 }

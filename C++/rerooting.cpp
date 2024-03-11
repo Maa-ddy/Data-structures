@@ -30,30 +30,66 @@ vector<vector<int>> read_tree(int n) {
   return tree;
 }
 
-
 ll n, m;
 vector<vector<int>> g;
-
-typedef ll ResultNode;  // the result for the dfs traversal
+typedef ll ResultNode;                                              // CHANGEME
 ResultNode identity = -1e12;
-vector<set<pair<ResultNode, int>> downward;
-vector<map<int, ResultNode>> reverse_downward;
 
-ResultNode best(ResultNode x, ResultNode y) {
-    return max(x, y);
-}
+class ResultsContainer {                                            // CHANGEME
+    set<pair<ResultNode, int>> values;
+    map<int, ResultNode> reverse_values;
+    bool marked; // specific
 
-ResultNode dfs(int u, int p) {
-  ResultNode ans = identity;
+    public:
+
+    ResultsContainer(bool is_marked) {
+        marked = is_marked; // specific
+    }
+
+    ResultsContainer() {
+        marked = false; // specific
+    }
+    
+    void insert(int to, ResultNode v) {
+        values.insert({v, to});
+        reverse_values[to] = v;
+    }
+
+    ResultNode remove(int id) {
+        ResultNode removed = reverse_values[id];
+        values.erase(removed);
+        return removed;
+    }
+
+    ResultNode merged_value() {
+        if (values.empty()) return identity;
+        ResultNode ans = values.rbegin()->second;
+        if (ans < 0 && marked) { // specific
+            return 0;
+        }
+        return ans;
+    }
+
+};
+
+vector<ResultsContainer> results;
+#define operation(x, y) max(x, y)                                   // CHANGEME
+
+void dfs(int u, int p) {
   for (int to: g[u]) {
     if (to == p) continue;
-    ResultNode child_result = dfs(to, u);
-    downward[u].insert({child_result, to});
-    reverse_downward[u][to] = child_result;
-    ans = best(ans, dpth);
+    dfs(to, u);
+    ResultNode child_result = results[to].merged_value();
+    results[u].insert(to, child_result);
   }
-  if (ans < 0 && marked[u]) ans = 0;    // specific to the example
-  return 1 + ans;                       // specific to the example
+}
+
+ResultNode detatch(int detatchable, int detatchee) {
+    return results[detatchable].remove(detatchee);
+}
+
+void reattatch(int reattatchable, int reattatchee_idx, ResultNode reattatchee) {
+    results[reattatchable].insert(reattatchee_idx, reattatchee);
 }
 
 void reroot() {
@@ -62,30 +98,18 @@ void reroot() {
     while (!q.empty()) {
         pii me = q.front(); q.pop();
         ResultNode result = identity;
-        if (!depths[me.first].empty()) result = depths[me.first].rbegin()->first;
+        if (!results[me.first].empty()) result = results[me.first].rbegin()->first; // CHANGEME
         if (me.second != -1) {
             ResultNode upward_result = identity;
-            if (!downward[me.second].empty()) {
-                // detatch me.first from downward
-                // calculate result of parent
-                // calculate me result
-                // insert to me the result
-                // insert to parent the previously detatched result
-                auto biggest = depths[me.second].rbegin();
-                if (biggest->second == me.first ) {
-                if (sz(depths[me.second]) > 1) {
-                    biggest++;
-                    upward_dpth = 1 + (biggest->first);
-                }
-                } else {
-                upward_dpth = 1 + (biggest->first);
-                }
+            ResultNode detatched = detatch(me.second, me.first);
+            ResultNode value_from_detatched_parent = results.merged_value();
+            result = operation(result, value_from_detatched_parent);
+            reattatch(me.second, me.first, detatched);
+            
+            if (upward_result < 0) { // specific
+                if (marked[me.second]) upward_result = 1;
             }
-            if (upward_dpth < 0) {
-                if (marked[me.second]) upward_dpth = 1;
-            }
-            dpth = max(dpth, upward_dpth);
-            depths[me.first].insert({upward_dpth, me.second});
+            result = operation(result, 1 + upward_result);  // CHANGEME
         }
     }
 }
